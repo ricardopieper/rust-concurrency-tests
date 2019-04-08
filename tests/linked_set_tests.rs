@@ -1,4 +1,4 @@
-use rust_concurrency_tests::linked_set::LinkedSet;
+use rust_concurrency_tests::linked_set::*;
 
 #[test]
 fn adds_item() {

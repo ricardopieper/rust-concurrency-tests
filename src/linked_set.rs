@@ -1,27 +1,33 @@
-use std::collections::VecDeque;
 use std::mem;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Mutex};
 
+pub trait Set<T> {
+    fn add(&mut self, item: T);
+    fn len(&self) -> i32;
+    fn remove(&mut self, item: T) -> Option<T>;
+}
 
 pub struct LinkedSet<T> where T: Eq,
 {
     root: Option<Box<LinkedSetNode<T>>>,
 }
 
-//O(n) lookups
 struct LinkedSetNode<T> where T: Eq,
 {
     item: T,
     next: Option<Box<LinkedSetNode<T>>>,
 }
 
-impl<T> LinkedSet<T> where T: Eq,
-{
-    pub fn new() -> LinkedSet<T> {
-        LinkedSet { root: None }
+impl<T> LinkedSet<T> where T: Eq {
+     pub fn new() -> Arc<Mutex<LinkedSet<T>>> {
+        Arc::new(Mutex::new(LinkedSet { root: None }))
     }
-    
-    pub fn add(&mut self, item: T) {
+}
+
+impl<T> Set<T> for LinkedSet<T> where T: Eq,
+{
+   
+    fn add(&mut self, item: T) {
         let root = &mut self.root;
         if let Some(node) = root {
             if node.item == item {
@@ -53,7 +59,7 @@ impl<T> LinkedSet<T> where T: Eq,
         }
     }
     
-    pub fn len(&self) -> i32 {
+    fn len(&self) -> i32 {
         let root = &self.root;
         match root {
             Some(node) => {
@@ -69,7 +75,7 @@ impl<T> LinkedSet<T> where T: Eq,
         }
     }
     
-    pub fn remove(&mut self, item: T) -> Option<T> {
+    fn remove(&mut self, item: T) -> Option<T> {
 
         match self.root {
             Some(ref mut root_node) => {                
@@ -112,5 +118,23 @@ impl<T> LinkedSet<T> where T: Eq,
             }
             None => return None,
         }
+    }
+}
+
+impl <T, LS> Set<T> for Arc<Mutex<LS>> where LS: Set<T>  {
+    fn add(&mut self, item: T){
+        let lock = self.clone();
+        let mut set = lock.lock().unwrap();
+        set.add(item);
+    }
+    fn len(&self) -> i32 {
+        let lock = self.clone();
+        let set = lock.lock().unwrap();
+        set.len()
+    }
+    fn remove(&mut self, item: T) -> Option<T> {
+        let lock = self.clone();
+        let mut set = lock.lock().unwrap();
+        set.remove(item)
     }
 }
