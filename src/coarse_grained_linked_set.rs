@@ -1,33 +1,62 @@
 use std::mem;
-use std::sync::{Arc, Mutex};
+use std::sync::Mutex;
 
-pub trait Set<T> {
-    fn add(&mut self, item: T);
-    fn len(&self) -> i32;
-    fn remove(&mut self, item: T) -> Option<T>;
+pub struct CoarseLockLinkedSet<T> where T: Eq {
+    set: Mutex<LinkedSet<T>>,
+    inserts: Mutex<i64>,
+    deletes: Mutex<i64>,
 }
 
-pub struct LinkedSet<T> where T: Eq,
-{
+impl <T> CoarseLockLinkedSet<T> where T: Eq {
+
+    pub fn new() -> CoarseLockLinkedSet<T> {
+        CoarseLockLinkedSet {
+            set: Mutex::new(LinkedSet::<T>::new()),
+            inserts: Mutex::new(0),
+            deletes: Mutex::new(0)
+        }
+    }
+
+    pub fn add(&self, item: T){
+        let mut set = self.set.lock().unwrap();
+        set.add(item);
+        *self.inserts.lock().unwrap() += 1;
+    }
+    pub fn len(&self) -> i32 {
+        let set = self.set.lock().unwrap();
+        set.len()
+    }
+    pub fn remove(&self, item: T) -> Option<T> {
+        let mut set = self.set.lock().unwrap();
+        *self.deletes.lock().unwrap() += 1;
+        set.remove(item)
+    }
+
+    pub fn get_inserts(&self) -> i64 {
+        *self.inserts.lock().unwrap()
+    }
+    pub fn get_deletes(&self) -> i64 {
+        *self.deletes.lock().unwrap()
+    }
+}
+
+unsafe impl <T> Send for CoarseLockLinkedSet<T> where T: Eq{}
+unsafe impl <T> Sync for CoarseLockLinkedSet<T> where T: Eq{}
+
+struct LinkedSet<T> where T: Eq {
     root: Option<Box<LinkedSetNode<T>>>,
 }
 
-struct LinkedSetNode<T> where T: Eq,
-{
+struct LinkedSetNode<T> where T: Eq {
     item: T,
     next: Option<Box<LinkedSetNode<T>>>,
 }
 
 impl<T> LinkedSet<T> where T: Eq {
-     pub fn new() -> Arc<Mutex<LinkedSet<T>>> {
-        Arc::new(Mutex::new(LinkedSet { root: None }))
+     pub fn new() -> LinkedSet<T> {
+        LinkedSet { root: None }
     }
-}
-
-impl<T> Set<T> for LinkedSet<T> where T: Eq,
-{
-   
-    fn add(&mut self, item: T) {
+    pub fn add(&mut self, item: T) {
         let root = &mut self.root;
         if let Some(node) = root {
             if node.item == item {
@@ -59,7 +88,7 @@ impl<T> Set<T> for LinkedSet<T> where T: Eq,
         }
     }
     
-    fn len(&self) -> i32 {
+    pub fn len(&self) -> i32 {
         let root = &self.root;
         match root {
             Some(node) => {
@@ -75,7 +104,7 @@ impl<T> Set<T> for LinkedSet<T> where T: Eq,
         }
     }
     
-    fn remove(&mut self, item: T) -> Option<T> {
+    pub fn remove(&mut self, item: T) -> Option<T> {
 
         match self.root {
             Some(ref mut root_node) => {                
@@ -118,23 +147,5 @@ impl<T> Set<T> for LinkedSet<T> where T: Eq,
             }
             None => return None,
         }
-    }
-}
-
-impl <T, LS> Set<T> for Arc<Mutex<LS>> where LS: Set<T>  {
-    fn add(&mut self, item: T){
-        let lock = self.clone();
-        let mut set = lock.lock().unwrap();
-        set.add(item);
-    }
-    fn len(&self) -> i32 {
-        let lock = self.clone();
-        let set = lock.lock().unwrap();
-        set.len()
-    }
-    fn remove(&mut self, item: T) -> Option<T> {
-        let lock = self.clone();
-        let mut set = lock.lock().unwrap();
-        set.remove(item)
     }
 }

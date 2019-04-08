@@ -1,8 +1,8 @@
-use rust_concurrency_tests::linked_set::*;
+use rust_concurrency_tests::coarse_grained_linked_set::CoarseLockLinkedSet;
 
 #[test]
 fn adds_item() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     assert!(set.len() == 1);
 
@@ -21,7 +21,7 @@ fn adds_item() {
 
 #[test]
 fn adding_same_item_has_no_effect() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     set.add(1);
     set.add(1);
@@ -37,7 +37,7 @@ fn adding_same_item_has_no_effect() {
 
 #[test]
 fn adds_and_removes_root() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     let removed = set.remove(1);
     assert!(removed == Some(1));
@@ -46,7 +46,7 @@ fn adds_and_removes_root() {
 
 #[test]
 fn adds_root_and_fails_to_remove() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     let removed = set.remove(2);
     assert!(removed == None);
@@ -55,7 +55,7 @@ fn adds_root_and_fails_to_remove() {
 
 #[test]
 fn adds_multiple_items_and_removes_everything_front_to_back() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     set.add(2);
     set.add(3);
@@ -80,7 +80,7 @@ fn adds_multiple_items_and_removes_everything_front_to_back() {
 
 #[test]
 fn adds_multiple_items_and_removes_everything_back_to_front() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     set.add(2);
     set.add(3);
@@ -105,7 +105,7 @@ fn adds_multiple_items_and_removes_everything_back_to_front() {
 
 #[test]
 fn adds_multiple_items_and_removes_everything_no_particular_order() {
-    let mut set = LinkedSet::<i32>::new();
+    let mut set = CoarseLockLinkedSet::<i32>::new();
     set.add(1);
     set.add(2);
     set.add(3);
